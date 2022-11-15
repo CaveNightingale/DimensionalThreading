@@ -128,7 +128,8 @@ public class ThreadPool {
 	}
 
 	public void shutdown() {
-		this.executor.shutdown();
+		if (!isShutdown())
+			this.executor.shutdown();
 	}
 
 	public boolean isShutdown() {
