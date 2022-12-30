@@ -104,23 +104,25 @@ public abstract class EntityMixin {
 			return;
 
 		if (DimThread.owns(Thread.currentThread())) {
-			nbtCachedForMoveToWorld = writeNbt(new NbtCompound());
-			uncompletedTeleportTargetForMoveToWorld = createTeleportTargetUncompleted(destination);
-			destination.getServer().execute(
-					() -> {
-						Entity entity = this.moveToWorld(destination);
-						if(entity == null) {
-							this.unsetRemoved();
-							nbtCachedForMoveToWorld.putInt("PortalCooldown", this.netherPortalCooldown);
-							this.readNbt(nbtCachedForMoveToWorld);
-							this.uncompletedTeleportTargetForMoveToWorld = null;
-							this.nbtCachedForMoveToWorld = null;
-							this.world.spawnEntity((Entity) (Object) this);// if the teleporting failed, we need to add it back to the world
-							LOGGER.debug("Failed to teleport {}, return it to its previous world", this);
+			if (nbtCachedForMoveToWorld == null) { // Some entity may invoke moveToWorld many times, which may cause https://github.com/CaveNightingale/DimensionalThreading/issues/1
+				nbtCachedForMoveToWorld = writeNbt(new NbtCompound());
+				uncompletedTeleportTargetForMoveToWorld = createTeleportTargetUncompleted(destination);
+				destination.getServer().execute(
+						() -> {
+							Entity entity = this.moveToWorld(destination);
+							if (entity == null) {
+								this.unsetRemoved();
+								nbtCachedForMoveToWorld.putInt("PortalCooldown", this.netherPortalCooldown);
+								this.readNbt(nbtCachedForMoveToWorld);
+								this.uncompletedTeleportTargetForMoveToWorld = null;
+								this.nbtCachedForMoveToWorld = null;
+								this.world.spawnEntity((Entity) (Object) this);// if the teleporting failed, we need to add it back to the world
+								LOGGER.debug("Failed to teleport {}, return it to its previous world", this);
+							}
 						}
-					}
-			);
-			this.removeFromDimension();
+				);
+				this.removeFromDimension();
+			}
 			ci.setReturnValue(null);
 		}
 	}
