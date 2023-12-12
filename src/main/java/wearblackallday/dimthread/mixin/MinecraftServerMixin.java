@@ -84,7 +84,9 @@ public abstract class MinecraftServerMixin implements IThreadedServer {
 	 * */
 	@Inject(method = "shutdown", at = @At("HEAD"))
 	public void shutdownThreadpool(CallbackInfo ci) {
-		getDimThreadPool().shutdown();
+		if (getDimThreadPool() != null) {
+			getDimThreadPool().shutdown();
+		}
 	}
 
 	private boolean dimthread_active;
