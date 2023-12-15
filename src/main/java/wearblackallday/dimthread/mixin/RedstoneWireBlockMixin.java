@@ -22,18 +22,22 @@ import java.util.Map;
 @Mixin(RedstoneWireBlock.class)
 public abstract class RedstoneWireBlockMixin {
 
-	@Shadow @Final public static IntProperty POWER;
-	@Shadow @Final public static Map<Direction, EnumProperty<WireConnection>> DIRECTION_TO_WIRE_CONNECTION_PROPERTY;
-
-	@Shadow protected abstract BlockState getPlacementState(BlockView world, BlockState state, BlockPos pos);
-
+	@Shadow
+	@Final
+	public static IntProperty POWER;
+	@Shadow
+	@Final
+	public static Map<Direction, EnumProperty<WireConnection>> DIRECTION_TO_WIRE_CONNECTION_PROPERTY;
 	/**
 	 * {@code RedstoneWireBlock#wiresGivePower} is not thread-safe since it's a global flag. To ensure
 	 * no interference between threads the field is replaced with this thread local one.
 	 *
 	 * @see RedstoneWireBlock#emitsRedstonePower(BlockState)
-	 * */
+	 */
 	private final ThreadLocal<Boolean> wiresGivePowerSafe = ThreadLocal.withInitial(() -> true);
+
+	@Shadow
+	protected abstract BlockState getPlacementState(BlockView world, BlockState state, BlockPos pos);
 
 	@Inject(method = "getReceivedRedstonePower", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/world/World;getReceivedRedstonePower(Lnet/minecraft/util/math/BlockPos;)I",
@@ -73,12 +77,12 @@ public abstract class RedstoneWireBlockMixin {
 	 */
 	@Overwrite
 	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-		if(!this.wiresGivePowerSafe.get() || direction == Direction.DOWN) {
+		if (!this.wiresGivePowerSafe.get() || direction == Direction.DOWN) {
 			return 0;
 		}
 
 		int i = state.get(POWER);
-		if(i == 0)return 0;
+		if (i == 0) return 0;
 		return direction != Direction.UP && !this.getPlacementState(world, state, pos)
 				.get(DIRECTION_TO_WIRE_CONNECTION_PROPERTY.get(direction.getOpposite())).isConnected() ? 0 : i;
 	}

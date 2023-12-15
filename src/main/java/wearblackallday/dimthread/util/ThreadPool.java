@@ -11,9 +11,9 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 public class ThreadPool {
-	private ThreadPoolExecutor executor;
 	private final int threadCount;
 	private final IntLatch activeCount = new IntLatch();
+	private ThreadPoolExecutor executor;
 
 	public ThreadPool() {
 		this(Runtime.getRuntime().availableProcessors());
@@ -70,39 +70,39 @@ public class ThreadPool {
 	}
 
 	public <T> void execute(T[] array, Consumer<T> action) {
-		for(T t : array) this.execute(() -> action.accept(t));
+		for (T t : array) this.execute(() -> action.accept(t));
 	}
 
 	public void execute(boolean[] array, Consumer<Boolean> action) {
-		for(boolean t : array) this.execute(() -> action.accept(t));
+		for (boolean t : array) this.execute(() -> action.accept(t));
 	}
 
 	public void execute(byte[] array, Consumer<Byte> action) {
-		for(byte t : array) this.execute(() -> action.accept(t));
+		for (byte t : array) this.execute(() -> action.accept(t));
 	}
 
 	public void execute(short[] array, Consumer<Short> action) {
-		for(short t : array) this.execute(() -> action.accept(t));
+		for (short t : array) this.execute(() -> action.accept(t));
 	}
 
 	public void execute(int[] array, IntConsumer action) {
-		for(int t : array) this.execute(() -> action.accept(t));
+		for (int t : array) this.execute(() -> action.accept(t));
 	}
 
 	public void execute(float[] array, Consumer<Float> action) {
-		for(float t : array) this.execute(() -> action.accept(t));
+		for (float t : array) this.execute(() -> action.accept(t));
 	}
 
 	public void execute(long[] array, LongConsumer action) {
-		for(long t : array) this.execute(() -> action.accept(t));
+		for (long t : array) this.execute(() -> action.accept(t));
 	}
 
 	public void execute(double[] array, DoubleConsumer action) {
-		for(double t : array) this.execute(() -> action.accept(t));
+		for (double t : array) this.execute(() -> action.accept(t));
 	}
 
 	public void execute(char[] array, Consumer<Character> action) {
-		for(char t : array) this.execute(() -> action.accept(t));
+		for (char t : array) this.execute(() -> action.accept(t));
 	}
 
 	public void awaitFreeThread() {
@@ -116,14 +116,14 @@ public class ThreadPool {
 	public void waitFor(IntPredicate condition) {
 		try {
 			this.activeCount.waitUntil(condition);
-		} catch(InterruptedException e) {
+		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	}
 
 	public void restart() {
-		if(this.executor == null || this.executor.isShutdown()) {
-			this.executor = (ThreadPoolExecutor)Executors.newFixedThreadPool(this.threadCount);
+		if (this.executor == null || this.executor.isShutdown()) {
+			this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(this.threadCount);
 		}
 	}
 
@@ -148,7 +148,7 @@ public class ThreadPool {
 		}
 
 		private synchronized int getCount() {
-			return (int)this.latch.getCount();
+			return (int) this.latch.getCount();
 		}
 
 		private synchronized void decrement() {
@@ -157,12 +157,12 @@ public class ThreadPool {
 		}
 
 		private synchronized void increment() {
-			this.latch = new CountDownLatch((int)this.latch.getCount() + 1);
+			this.latch = new CountDownLatch((int) this.latch.getCount() + 1);
 			this.notifyAll();
 		}
 
 		private synchronized void waitUntil(IntPredicate predicate) throws InterruptedException {
-			while(!predicate.test(this.getCount())) {
+			while (!predicate.test(this.getCount())) {
 				this.wait();
 			}
 		}

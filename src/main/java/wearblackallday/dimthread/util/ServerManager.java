@@ -5,7 +5,7 @@ import net.minecraft.world.GameRules;
 
 public final class ServerManager {
 	public static boolean isActive(MinecraftServer server) {
-		return ((IThreadedServer)server).isDimThreadActive();
+		return ((IThreadedServer) server).isDimThreadActive();
 	}
 
 	public static void setActive(MinecraftServer server, GameRules.BooleanRule value) {

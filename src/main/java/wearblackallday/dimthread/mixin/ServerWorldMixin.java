@@ -19,14 +19,15 @@ import java.util.function.Supplier;
 
 @Mixin(ServerWorld.class)
 public abstract class ServerWorldMixin extends World implements ServerWorldAccessor {
+	boolean onMainThread = false;
+	boolean timeTickedOnWorldThread = false;
+
 	protected ServerWorldMixin(MutableWorldProperties properties, RegistryKey<World> registryRef, RegistryEntry<DimensionType> registryEntry, Supplier<Profiler> profiler, boolean isClient, boolean debugWorld, long seed) {
 		super(properties, registryRef, registryEntry, profiler, isClient, debugWorld, seed);
 	}
 
-	@Shadow protected abstract void tickTime();
-
-	boolean onMainThread = false;
-	boolean timeTickedOnWorldThread = false;
+	@Shadow
+	protected abstract void tickTime();
 
 	/**
 	 * Time ticking is not thread-safe. We cancel time ticking from the world thread. However, DimThread will tick time on the main thread

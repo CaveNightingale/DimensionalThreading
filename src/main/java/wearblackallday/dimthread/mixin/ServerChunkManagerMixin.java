@@ -1,7 +1,5 @@
 package wearblackallday.dimthread.mixin;
 
-import wearblackallday.dimthread.DimThread;
-import wearblackallday.dimthread.thread.IMutableMainThread;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.world.ServerChunkManager;
 import net.minecraft.server.world.ServerWorld;
@@ -16,14 +14,23 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import wearblackallday.dimthread.DimThread;
+import wearblackallday.dimthread.thread.IMutableMainThread;
 import wearblackallday.dimthread.util.ServerManager;
 
 @Mixin(value = ServerChunkManager.class, priority = 1001)
 public abstract class ServerChunkManagerMixin extends ChunkManager implements IMutableMainThread {
 
-	@Shadow @Final @Mutable private Thread serverThread;
-	@Shadow @Final public ThreadedAnvilChunkStorage threadedAnvilChunkStorage;
-	@Shadow @Final private ServerWorld world;
+	@Shadow
+	@Final
+	public ThreadedAnvilChunkStorage threadedAnvilChunkStorage;
+	@Shadow
+	@Final
+	@Mutable
+	private Thread serverThread;
+	@Shadow
+	@Final
+	private ServerWorld world;
 
 	@Override
 	public Thread getMainThread() {
@@ -37,9 +44,9 @@ public abstract class ServerChunkManagerMixin extends ChunkManager implements IM
 
 	@Inject(method = "getTotalChunksLoadedCount", at = @At("HEAD"), cancellable = true)
 	private void getTotalChunksLoadedCount(CallbackInfoReturnable<Integer> ci) {
-		if(FabricLoader.getInstance().isDevelopmentEnvironment()) {
+		if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
 			int count = this.threadedAnvilChunkStorage.getTotalChunksLoadedCount();
-			if(count < 441)ci.setReturnValue(441);
+			if (count < 441) ci.setReturnValue(441);
 		}
 	}
 
@@ -47,7 +54,7 @@ public abstract class ServerChunkManagerMixin extends ChunkManager implements IM
 	public Thread currentThread(int x, int z, ChunkStatus leastStatus, boolean create) {
 		Thread thread = Thread.currentThread();
 
-		if(ServerManager.isActive(this.world.getServer()) && DimThread.owns(thread)) {
+		if (ServerManager.isActive(this.world.getServer()) && DimThread.owns(thread)) {
 			return this.serverThread;
 		}
 

@@ -14,17 +14,6 @@ public class DimThread implements ModInitializer {
 
 	public static final String MOD_ID = "dimthread";
 
-	@Override
-	public void onInitialize() {
-		ModGameRules.registerGameRules();
-		ServerLifecycleEvents.SERVER_STARTED.register(this::onServerLoaded);
-	}
-
-	public void onServerLoaded(MinecraftServer server) {
-		((IThreadedServer)server).setDimThreadPool(new ThreadPool(server.getGameRules().getInt(ModGameRules.THREAD_COUNT.getKey())));
-		((IThreadedServer)server).setDimThreadActive(server.getGameRules().getBoolean(ModGameRules.ACTIVE.getKey()));
-	}
-
 	public static ThreadPool getThreadPool(MinecraftServer server) {
 		return ServerManager.getThreadPool(server);
 	}
@@ -33,21 +22,21 @@ public class DimThread implements ModInitializer {
 		Thread currentThread = Thread.currentThread();
 		Thread[] oldThreads = new Thread[threadedObjects.length];
 
-		for(int i = 0; i < oldThreads.length; i++) {
-			oldThreads[i] = ((IMutableMainThread)threadedObjects[i]).getMainThread();
-			((IMutableMainThread)threadedObjects[i]).setMainThread(currentThread);
+		for (int i = 0; i < oldThreads.length; i++) {
+			oldThreads[i] = ((IMutableMainThread) threadedObjects[i]).getMainThread();
+			((IMutableMainThread) threadedObjects[i]).setMainThread(currentThread);
 		}
 
 		task.run();
 
-		for(int i = 0; i < oldThreads.length; i++) {
-			((IMutableMainThread)threadedObjects[i]).setMainThread(oldThreads[i]);
+		for (int i = 0; i < oldThreads.length; i++) {
+			((IMutableMainThread) threadedObjects[i]).setMainThread(oldThreads[i]);
 		}
 	}
 
 	/**
 	 * Makes it easy to understand what is happening in crash reports and helps identify dimthread workers.
-	 * */
+	 */
 	public static void attach(Thread thread, String name) {
 		thread.setName(MOD_ID + "_" + name);
 	}
@@ -58,9 +47,20 @@ public class DimThread implements ModInitializer {
 
 	/**
 	 * Checks if the given thread is a dimthread worker by checking the name. Probably quite fragile...
-	 * */
+	 */
 	public static boolean owns(Thread thread) {
 		return thread.getName().startsWith(MOD_ID);
+	}
+
+	@Override
+	public void onInitialize() {
+		ModGameRules.registerGameRules();
+		ServerLifecycleEvents.SERVER_STARTED.register(this::onServerLoaded);
+	}
+
+	public void onServerLoaded(MinecraftServer server) {
+		((IThreadedServer) server).setDimThreadPool(new ThreadPool(server.getGameRules().getInt(ModGameRules.THREAD_COUNT.getKey())));
+		((IThreadedServer) server).setDimThreadActive(server.getGameRules().getBoolean(ModGameRules.ACTIVE.getKey()));
 	}
 
 }

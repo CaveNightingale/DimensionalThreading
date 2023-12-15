@@ -1,8 +1,8 @@
 package wearblackallday.dimthread.gamerule;
 
-import wearblackallday.dimthread.DimThread;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.minecraft.world.GameRules;
+import wearblackallday.dimthread.DimThread;
 
 public abstract class GameRule<T extends GameRules.Rule<T>> {
 

@@ -38,62 +38,81 @@ import java.util.Optional;
 @Mixin(Entity.class)
 public abstract class EntityMixin {
 
+	@Shadow
+	@Final
+	private static Logger LOGGER;
+	@Shadow
+	public World world;
+	@Shadow
+	protected BlockPos lastNetherPortalPosition;
 	private NbtCompound nbtCachedForMoveToWorld;
-
 	private UncompletedTeleportTarget uncompletedTeleportTargetForMoveToWorld;
+	@Shadow
+	private int netherPortalCooldown;
+
 	@Shadow
 	protected abstract void removeFromDimension();
 
+	@Shadow
+	public abstract World getWorld();
 
-	@Shadow public abstract World getWorld();
+	@Shadow
+	public abstract NbtCompound writeNbt(NbtCompound nbt);
 
-	@Shadow public abstract NbtCompound writeNbt(NbtCompound nbt);
+	@Shadow
+	public abstract @Nullable Entity moveToWorld(ServerWorld destination);
 
-	@Shadow public abstract @Nullable Entity moveToWorld(ServerWorld destination);
+	@Shadow
+	public abstract boolean isRemoved();
 
-	@Shadow private int netherPortalCooldown;
+	@Shadow
+	@Nullable
+	public abstract MinecraftServer getServer();
 
-	@Shadow protected BlockPos lastNetherPortalPosition;
+	@Shadow
+	public abstract double getX();
 
-	@Shadow public abstract boolean isRemoved();
+	@Shadow
+	public abstract double getY();
 
-	@Shadow @Nullable public abstract MinecraftServer getServer();
+	@Shadow
+	public abstract double getZ();
 
-	@Shadow public World world;
+	@Shadow
+	protected abstract Optional<BlockLocating.Rectangle> getPortalRect(ServerWorld destWorld, BlockPos destPos, boolean destIsNether, WorldBorder worldBorder);
 
-	@Shadow public abstract double getX();
+	@Shadow
+	protected abstract Vec3d positionInPortal(Direction.Axis portalAxis, BlockLocating.Rectangle portalRect);
 
-	@Shadow public abstract double getY();
+	@Shadow
+	public abstract EntityDimensions getDimensions(EntityPose pose);
 
-	@Shadow public abstract double getZ();
+	@Shadow
+	public abstract EntityPose getPose();
 
-	@Shadow protected abstract Optional<BlockLocating.Rectangle> getPortalRect(ServerWorld destWorld, BlockPos destPos, boolean destIsNether, WorldBorder worldBorder);
+	@Shadow
+	public abstract Vec3d getVelocity();
 
-	@Shadow protected abstract Vec3d positionInPortal(Direction.Axis portalAxis, BlockLocating.Rectangle portalRect);
+	@Shadow
+	public abstract float getYaw();
 
-	@Shadow public abstract EntityDimensions getDimensions(EntityPose pose);
+	@Shadow
+	public abstract float getPitch();
 
-	@Shadow public abstract EntityPose getPose();
+	@Shadow
+	protected abstract @Nullable TeleportTarget getTeleportTarget(ServerWorld destination);
 
-	@Shadow public abstract Vec3d getVelocity();
+	@Shadow
+	protected abstract void unsetRemoved();
 
-	@Shadow public abstract float getYaw();
-
-	@Shadow public abstract float getPitch();
-
-	@Shadow protected abstract @Nullable TeleportTarget getTeleportTarget(ServerWorld destination);
-
-	@Shadow protected abstract void unsetRemoved();
-
-	@Shadow public abstract void readNbt(NbtCompound nbt);
-
-	@Shadow @Final private static Logger LOGGER;
+	@Shadow
+	public abstract void readNbt(NbtCompound nbt);
 
 	/**
 	 * Schedules moving entities between dimensions to the server thread. Once all
 	 * the world finish ticking, {@code moveToWorld()} is processed in a safe manner
 	 * avoiding concurrent modification exceptions.
-	 *
+	 * <p>
 	 * For example, the entity list is not thread-safe and modifying it from
 	 * multiple threads will cause a crash. Additionally, loading chunks from
 	 * another thread will cause a deadlock in the server chunk manager.
@@ -132,7 +151,7 @@ public abstract class EntityMixin {
 	 */
 	@Redirect(method = "moveToWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;copyFrom(Lnet/minecraft/entity/Entity;)V"))
 	private void onMoveToWorldCopyFrom(Entity instance, Entity original) {
-		if(ServerManager.isActive(getServer())) {
+		if (ServerManager.isActive(getServer())) {
 			NbtCompound nbtCompound = ((EntityMixin) (Object) original).nbtCachedForMoveToWorld;
 			nbtCompound.remove("Dimension");
 			instance.readNbt(nbtCompound);
@@ -150,7 +169,7 @@ public abstract class EntityMixin {
 	@Redirect(method = "moveToWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;getTeleportTarget(Lnet/minecraft/server/world/ServerWorld;)Lnet/minecraft/world/TeleportTarget;"))
 	private TeleportTarget onMoveToWorldGetTeleportTarget(@NotNull Entity instance, ServerWorld destination) {
 		EntityMixin ins = ((EntityMixin) (Object) instance);
-		if(ServerManager.isActive(getServer())) {
+		if (ServerManager.isActive(getServer())) {
 			return ins.uncompletedTeleportTargetForMoveToWorld == null ? null : ins.uncompletedTeleportTargetForMoveToWorld.complete(destination);
 		} else {
 			return ins.getTeleportTarget(destination);
@@ -159,7 +178,7 @@ public abstract class EntityMixin {
 
 	@Inject(method = "removeFromDimension", at = @At("HEAD"), cancellable = true)
 	private void onRemoveFromDimension(CallbackInfo ci) {
-		if(isRemoved()) {
+		if (isRemoved()) {
 			ci.cancel();
 		}
 	}
@@ -180,10 +199,10 @@ public abstract class EntityMixin {
 		boolean isEndPortal = dest.getRegistryKey() == World.END;
 		Vec3d velocity = getVelocity();
 		float yaw = getYaw(), pitch = getPitch();
-		if(!isEndPortal && !isEndReturnPortal) {
+		if (!isEndPortal && !isEndReturnPortal) {
 			boolean isNetherPortal = dest.getRegistryKey() == World.NETHER;
 			boolean isNetherReturnPortal = world.getRegistryKey() == World.NETHER;
-			if(!isNetherPortal && !isNetherReturnPortal) {
+			if (!isNetherPortal && !isNetherReturnPortal) {
 				return dest1 -> null;
 			} else {
 				WorldBorder border = dest.getWorldBorder();

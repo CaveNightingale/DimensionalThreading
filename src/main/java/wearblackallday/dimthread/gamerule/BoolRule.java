@@ -21,7 +21,8 @@ public class BoolRule extends GameRule<GameRules.BooleanRule> {
 		private final GameRules.Category category;
 
 		private boolean initialValue = false;
-		private BiConsumer<MinecraftServer, GameRules.BooleanRule> callback = (server, rule) -> {};
+		private BiConsumer<MinecraftServer, GameRules.BooleanRule> callback = (server, rule) -> {
+		};
 
 		private Builder(String name, GameRules.Category category) {
 			this.name = name;

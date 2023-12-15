@@ -23,7 +23,8 @@ public class IntRule extends GameRule<GameRules.IntRule> {
 		private int initialValue = 0;
 		private int minimumValue = Integer.MIN_VALUE;
 		private int maximumValue = Integer.MAX_VALUE;
-		private BiConsumer<MinecraftServer, GameRules.IntRule> callback = (server, rule) -> {};
+		private BiConsumer<MinecraftServer, GameRules.IntRule> callback = (server, rule) -> {
+		};
 
 		private Builder(String name, GameRules.Category category) {
 			this.name = name;
