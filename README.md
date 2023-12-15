@@ -5,7 +5,7 @@ It works on both the **client and server**, and **does not** require the mod to 
 
 ### Downloads
 
-You can find downloads for DimThread on the [GitHub releases page](https://github.com/MCTown/DimensionalThreading/releases). 
+You can find downloads for DimThread on the [GitHub releases page](https://github.com/CaveNightingale/DimensionalThreading/releases). 
 The Fabric API can be found on [Curseforge](https://www.curseforge.com/minecraft/mc-mods/fabric-api).
 
 ### Installing
@@ -18,13 +18,12 @@ Once you have installed Fabric, move the`DimThread.jar`and the`Fabric-API.jar`in
 ### Configuration
 
 ##### DimThread comes with 2 native Gamerules:
-- `/gamerule dimthread_active <true/false>` enables/disables the mod
-- `/gamerule dimthread_thread_count <count>`changes the amount of threads used
+- `/gamerule dimthreadActive <true/false>` enables/disables the mod
 
 ### FAQ
 
 ##### Does the mod change Vanilla behaviour?
-DimThread aims to conserve vanilla-parity in all points. At the moment there are no known deviations in behaviour from Mojangs`server.jar`. If you notice any, feel free to [open an issue.](https://github.com/WearBlackAllDay/DimensionalThreading/issues)
+DimThread aims to conserve vanilla-parity in all points. Currently, some bugs related to data-pack has been confirmed. But there are no other deviations in behaviour from Mojangs`server.jar`. If you notice any, feel free to [open an issue.](https://github.com/CaveNightingale/DimensionalThreading/issues)
 
 ##### Can my dimensions get de-synchronized?
 As stated above this is **NOT** the case. DimThread will always synchronize the dimensions it threads with each other, setting the overall MSPT to the slowest individual dimension.
@@ -35,9 +34,6 @@ Yes, but you will have to adjust the GameRule accordingly.
 ##### Will the server run faster if assign more than 3 threads to DimThread?
 No, the mod can only assign one dimension to one thread.
 
-##### Can i use DimThread if i have less threads on my CPU than dimensions?
-The mod will not crash if you do not have enough threads available, but it will make the game **slower**. You should always have atleast`DimensionCount + 1`threads available.
-
 ##### How is the compatibility with other mods?
 Compatibility with [JellySquids](https://github.com/jellysquid3) performance mods and [Carpet](https://github.com/gnembon/fabric-carpet) will be ensured and issues concerning them are accepted. If you plan on using a different mod compatibility cannot be guaranteed, since not every author writes their mod threadsafe.
 
@@ -46,4 +42,32 @@ Compatibility with [JellySquids](https://github.com/jellysquid3) performance mod
 
 ### License
 
-DimThread is licensed under MIT, a free and open-source license. For more information, please read the [license file](https://github.com/WearBlackAllDay/DimensionalThreading/blob/master/LICENSE).
+DimThread is licensed under MIT, a free and open-source license. For more information, please read the [license file](https://github.com/CaveNightingale/DimensionalThreading/blob/master/LICENSE).
+
+### Contributing
+
+#### Issues
+
+As this is an optimization mod, a **bug** is defined as:
+
+- A deviation from vanilla behaviour
+- Mod conflicts with other mods
+- Terrible performance in a specific scenario
+- Security issues
+
+Please notice that crashing is not always considered a bug. If both vanilla and modded servers crash, it is work as intended. If vanilla servers crash, but modded servers do not, or vice versa, it is a bug.
+
+Open an issue if you encounter any of the above. If you are unsure, feel free to open an issue anyway. In the issue, describe the bug, and how to reproduce it. A litemetic file is always appreciated.
+
+**Feature requests** should also be opened as issues. Describe the feature you want to be added, and why you think it should be added. This kind of issue is much free-form. Say anything you want, but please be civil.
+
+#### Pull requests and development
+
+Before you fix a bug, please open an issue before you start working on it. This is to prevent duplicate work, and to make sure that the bug is actually a bug, this help us discuss and understand the issue better.
+
+As for code, we have a few principles:
+
+- **Your code should work**, it should not have unexpected behaviour and tests are always appreciated. This is the most important principle.
+- **Your code should run fast**, at least the time complexity should be correct and better do some constant optimization in time-critical code.
+- **Your code should be readable**, avoid functions with hundreds of lines, deep nesting blocks, misleading variable names, etc.
+- **Your code should be maintainable**, do not copy-paste code, modularize your code, keep things simple, and leave comments when necessary.

@@ -24,13 +24,13 @@ import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import wearblackallday.dimthread.DimThread;
-import wearblackallday.dimthread.util.ServerManager;
 import wearblackallday.dimthread.util.UncompletedTeleportTarget;
 
 import java.util.Optional;
@@ -45,7 +45,9 @@ public abstract class EntityMixin {
 	public World world;
 	@Shadow
 	protected BlockPos lastNetherPortalPosition;
+	@Unique
 	private NbtCompound nbtCachedForMoveToWorld;
+	@Unique
 	private UncompletedTeleportTarget uncompletedTeleportTargetForMoveToWorld;
 	@Shadow
 	private int netherPortalCooldown;
@@ -108,6 +110,8 @@ public abstract class EntityMixin {
 	@Shadow
 	public abstract void readNbt(NbtCompound nbt);
 
+	@Shadow public abstract World getEntityWorld();
+
 	/**
 	 * Schedules moving entities between dimensions to the server thread. Once all
 	 * the world finish ticking, {@code moveToWorld()} is processed in a safe manner
@@ -119,10 +123,10 @@ public abstract class EntityMixin {
 	 */
 	@Inject(method = "moveToWorld", at = @At("HEAD"), cancellable = true)
 	public void onMoveToWorld(ServerWorld destination, CallbackInfoReturnable<Entity> ci) {
-		if (!ServerManager.isActive(destination.getServer()))
+		if (!DimThread.isActive(destination.getServer()))
 			return;
 
-		if (DimThread.owns(Thread.currentThread())) {
+		if (getEntityWorld() instanceof ServerWorld sw && DimThread.onWorkerThread(sw)) {
 			if (nbtCachedForMoveToWorld == null) { // Some entity may invoke moveToWorld many times, which may cause https://github.com/CaveNightingale/DimensionalThreading/issues/1
 				nbtCachedForMoveToWorld = writeNbt(new NbtCompound());
 				uncompletedTeleportTargetForMoveToWorld = createTeleportTargetUncompleted(destination);
@@ -151,7 +155,7 @@ public abstract class EntityMixin {
 	 */
 	@Redirect(method = "moveToWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;copyFrom(Lnet/minecraft/entity/Entity;)V"))
 	private void onMoveToWorldCopyFrom(Entity instance, Entity original) {
-		if (ServerManager.isActive(getServer())) {
+		if (DimThread.isActive(getServer())) {
 			NbtCompound nbtCompound = ((EntityMixin) (Object) original).nbtCachedForMoveToWorld;
 			nbtCompound.remove("Dimension");
 			instance.readNbt(nbtCompound);
@@ -169,7 +173,7 @@ public abstract class EntityMixin {
 	@Redirect(method = "moveToWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;getTeleportTarget(Lnet/minecraft/server/world/ServerWorld;)Lnet/minecraft/world/TeleportTarget;"))
 	private TeleportTarget onMoveToWorldGetTeleportTarget(@NotNull Entity instance, ServerWorld destination) {
 		EntityMixin ins = ((EntityMixin) (Object) instance);
-		if (ServerManager.isActive(getServer())) {
+		if (DimThread.isActive(getServer())) {
 			return ins.uncompletedTeleportTargetForMoveToWorld == null ? null : ins.uncompletedTeleportTargetForMoveToWorld.complete(destination);
 		} else {
 			return ins.getTeleportTarget(destination);
@@ -194,6 +198,7 @@ public abstract class EntityMixin {
 	/**
 	 * take a snapshot of some values so that codes modified it later doesn't affect teleporting
 	 */
+	@Unique
 	private UncompletedTeleportTarget createTeleportTargetUncompleted(ServerWorld dest) {
 		boolean isEndReturnPortal = world.getRegistryKey() == World.END && dest.getRegistryKey() == World.OVERWORLD;
 		boolean isEndPortal = dest.getRegistryKey() == World.END;

@@ -2,8 +2,7 @@ package wearblackallday.dimthread.thread;
 
 public interface IMutableMainThread {
 
-	Thread getMainThread();
+	void dimthread_setCurrentThread(Thread thread);
 
-	void setMainThread(Thread thread);
-
+	Thread dimthread_getCurrentThread();
 }

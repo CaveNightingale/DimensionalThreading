@@ -16,12 +16,12 @@ public abstract class WorldMixin implements IMutableMainThread {
 	private Thread thread;
 
 	@Override
-	public Thread getMainThread() {
+	public Thread dimthread_getCurrentThread() {
 		return this.thread;
 	}
 
 	@Override
-	public void setMainThread(Thread thread) {
+	public void dimthread_setCurrentThread(Thread thread) {
 		this.thread = thread;
 	}
 

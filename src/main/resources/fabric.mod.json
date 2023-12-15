@@ -18,6 +18,7 @@
   "accessWidener": "dimthread.accesswidener",
   "depends": {
     "fabricloader": ">=0.13.3",
-    "minecraft": ">=1.18"
+    "minecraft": "1.18.x",
+    "fabric-game-rule-api-v1": "*"
   }
 }
