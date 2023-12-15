@@ -16,7 +16,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import wearblackallday.dimthread.DimThread;
 import wearblackallday.dimthread.thread.IMutableMainThread;
-import wearblackallday.dimthread.util.ServerManager;
 
 @Mixin(value = ServerChunkManager.class, priority = 1001)
 public abstract class ServerChunkManagerMixin extends ChunkManager implements IMutableMainThread {
@@ -27,19 +26,19 @@ public abstract class ServerChunkManagerMixin extends ChunkManager implements IM
 	@Shadow
 	@Final
 	@Mutable
-	private Thread serverThread;
+	Thread serverThread;
 	@Shadow
 	@Final
-	private ServerWorld world;
+	ServerWorld world;
 
 	@Override
-	public Thread getMainThread() {
-		return this.serverThread;
+	public void dimthread_setCurrentThread(Thread thread) {
+		this.serverThread = thread;
 	}
 
 	@Override
-	public void setMainThread(Thread thread) {
-		this.serverThread = thread;
+	public Thread dimthread_getCurrentThread() {
+		return this.serverThread;
 	}
 
 	@Inject(method = "getTotalChunksLoadedCount", at = @At("HEAD"), cancellable = true)
@@ -54,7 +53,7 @@ public abstract class ServerChunkManagerMixin extends ChunkManager implements IM
 	public Thread currentThread(int x, int z, ChunkStatus leastStatus, boolean create) {
 		Thread thread = Thread.currentThread();
 
-		if (ServerManager.isActive(this.world.getServer()) && DimThread.owns(thread)) {
+		if (DimThread.isActive(this.world.getServer()) && DimThread.onWorkerThread(world)) {
 			return this.serverThread;
 		}
 

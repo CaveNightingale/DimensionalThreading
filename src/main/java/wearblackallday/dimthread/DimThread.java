@@ -2,65 +2,57 @@ package wearblackallday.dimthread;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
+import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
-import wearblackallday.dimthread.init.ModGameRules;
+import net.minecraft.world.GameRules;
+import org.apache.logging.log4j.Logger;
 import wearblackallday.dimthread.thread.IMutableMainThread;
 import wearblackallday.dimthread.util.IThreadedServer;
-import wearblackallday.dimthread.util.ServerManager;
-import wearblackallday.dimthread.util.ThreadPool;
+import wearblackallday.dimthread.util.ServerWorldAccessor;
 
 public class DimThread implements ModInitializer {
 
-	public static final String MOD_ID = "dimthread";
+	public static final Logger LOGGER = org.apache.logging.log4j.LogManager.getLogger("DimThread");
 
-	public static ThreadPool getThreadPool(MinecraftServer server) {
-		return ServerManager.getThreadPool(server);
-	}
+	private static GameRules.Key<GameRules.BooleanRule> ACTIVE;
 
-	public static void swapThreadsAndRun(Runnable task, Object... threadedObjects) {
-		Thread currentThread = Thread.currentThread();
-		Thread[] oldThreads = new Thread[threadedObjects.length];
-
-		for (int i = 0; i < oldThreads.length; i++) {
-			oldThreads[i] = ((IMutableMainThread) threadedObjects[i]).getMainThread();
-			((IMutableMainThread) threadedObjects[i]).setMainThread(currentThread);
-		}
-
-		task.run();
-
-		for (int i = 0; i < oldThreads.length; i++) {
-			((IMutableMainThread) threadedObjects[i]).setMainThread(oldThreads[i]);
-		}
+	/**
+	 * Check if the world is being processed on its own worker thread
+	 * @param world the world
+	 * @return true if the world is being processed on its own worker thread
+	 */
+	public static boolean onWorkerThread(ServerWorld world) {
+		return ((ServerWorldAccessor) world).dimthread_getWorkerThread() == ((IMutableMainThread) world).dimthread_getCurrentThread();
 	}
 
 	/**
-	 * Makes it easy to understand what is happening in crash reports and helps identify dimthread workers.
+	 * Is the dimthread active on this server?
+	 * @param server the server
+	 * @return true if the dimthread is active
 	 */
-	public static void attach(Thread thread, String name) {
-		thread.setName(MOD_ID + "_" + name);
-	}
-
-	public static void attach(Thread thread, ServerWorld world) {
-		attach(thread, world.getRegistryKey().getValue().getPath());
+	public static boolean isActive(MinecraftServer server) {
+		return ((IThreadedServer) server).isDimThreadActive();
 	}
 
 	/**
-	 * Checks if the given thread is a dimthread worker by checking the name. Probably quite fragile...
+	 * Set the dimthread active on this server
+	 * @param server the server
+	 * @param value the value
 	 */
-	public static boolean owns(Thread thread) {
-		return thread.getName().startsWith(MOD_ID);
+	public static void setActive(MinecraftServer server, GameRules.BooleanRule value) {
+		((IThreadedServer) server).setDimThreadActive(value.get());
 	}
 
 	@Override
 	public void onInitialize() {
-		ModGameRules.registerGameRules();
+		var active = GameRuleFactory.createBooleanRule(true, DimThread::setActive);
+		ACTIVE = GameRuleRegistry.register("dimthreadActive", GameRules.Category.UPDATES, active);
 		ServerLifecycleEvents.SERVER_STARTED.register(this::onServerLoaded);
 	}
 
 	public void onServerLoaded(MinecraftServer server) {
-		((IThreadedServer) server).setDimThreadPool(new ThreadPool(server.getGameRules().getInt(ModGameRules.THREAD_COUNT.getKey())));
-		((IThreadedServer) server).setDimThreadActive(server.getGameRules().getBoolean(ModGameRules.ACTIVE.getKey()));
+		((IThreadedServer) server).setDimThreadActive(server.getGameRules().getBoolean(ACTIVE));
 	}
-
 }

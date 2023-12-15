@@ -8,8 +8,4 @@ public interface IThreadedServer {
 	boolean isDimThreadActive();
 
 	void setDimThreadActive(boolean active);
-
-	ThreadPool getDimThreadPool();
-
-	void setDimThreadPool(ThreadPool pool);
 }
