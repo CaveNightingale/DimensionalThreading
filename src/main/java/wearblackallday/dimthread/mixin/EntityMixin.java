@@ -16,14 +16,15 @@ import net.minecraft.world.Heightmap;
 import net.minecraft.world.TeleportTarget;
 import net.minecraft.world.World;
 import net.minecraft.world.border.WorldBorder;
-import net.minecraft.world.dimension.AreaHelper;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.dimension.NetherPortal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -42,13 +43,15 @@ public abstract class EntityMixin {
 	@Final
 	private static Logger LOGGER;
 	@Shadow
-	public World world;
-	@Shadow
 	protected BlockPos lastNetherPortalPosition;
+	@Unique
 	private NbtCompound nbtCachedForMoveToWorld;
+	@Unique
 	private UncompletedTeleportTarget uncompletedTeleportTargetForMoveToWorld;
 	@Shadow
-	private int netherPortalCooldown;
+	private int portalCooldown;
+	@Shadow
+	private World world;
 
 	@Shadow
 	protected abstract void removeFromDimension();
@@ -131,7 +134,7 @@ public abstract class EntityMixin {
 							Entity entity = this.moveToWorld(destination);
 							if (entity == null) {
 								this.unsetRemoved();
-								nbtCachedForMoveToWorld.putInt("PortalCooldown", this.netherPortalCooldown);
+								nbtCachedForMoveToWorld.putInt("PortalCooldown", this.portalCooldown);
 								this.readNbt(nbtCachedForMoveToWorld);
 								this.uncompletedTeleportTargetForMoveToWorld = null;
 								this.nbtCachedForMoveToWorld = null;
@@ -155,7 +158,7 @@ public abstract class EntityMixin {
 			NbtCompound nbtCompound = ((EntityMixin) (Object) original).nbtCachedForMoveToWorld;
 			nbtCompound.remove("Dimension");
 			instance.readNbt(nbtCompound);
-			((EntityMixin) (Object) instance).netherPortalCooldown = ((EntityMixin) (Object) original).netherPortalCooldown;
+			((EntityMixin) (Object) instance).portalCooldown = ((EntityMixin) (Object) original).portalCooldown;
 			((EntityMixin) (Object) instance).lastNetherPortalPosition = ((EntityMixin) (Object) original).lastNetherPortalPosition;
 		} else {
 			instance.copyFrom(original);
@@ -170,7 +173,7 @@ public abstract class EntityMixin {
 	private TeleportTarget onMoveToWorldGetTeleportTarget(@NotNull Entity instance, ServerWorld destination) {
 		EntityMixin ins = ((EntityMixin) (Object) instance);
 		if (ServerManager.isActive(getServer())) {
-			return ins.uncompletedTeleportTargetForMoveToWorld == null ? null : ins.uncompletedTeleportTargetForMoveToWorld.complete(destination);
+			return ins.uncompletedTeleportTargetForMoveToWorld == null ? null : ins.uncompletedTeleportTargetForMoveToWorld.complete();
 		} else {
 			return ins.getTeleportTarget(destination);
 		}
@@ -194,6 +197,7 @@ public abstract class EntityMixin {
 	/**
 	 * take a snapshot of some values so that codes modified it later doesn't affect teleporting
 	 */
+	@Unique
 	private UncompletedTeleportTarget createTeleportTargetUncompleted(ServerWorld dest) {
 		boolean isEndReturnPortal = world.getRegistryKey() == World.END && dest.getRegistryKey() == World.OVERWORLD;
 		boolean isEndPortal = dest.getRegistryKey() == World.END;
@@ -203,7 +207,7 @@ public abstract class EntityMixin {
 			boolean isNetherPortal = dest.getRegistryKey() == World.NETHER;
 			boolean isNetherReturnPortal = world.getRegistryKey() == World.NETHER;
 			if (!isNetherPortal && !isNetherReturnPortal) {
-				return dest1 -> null;
+				return () -> null;
 			} else {
 				WorldBorder border = dest.getWorldBorder();
 				double scale = DimensionType.getCoordinateScaleFactor(world.getDimension(), dest.getDimension());
@@ -220,11 +224,11 @@ public abstract class EntityMixin {
 					axis = Direction.Axis.X;
 					vec3d = new Vec3d(0.5, 0.0, 0.0);
 				}
-				return dest1 -> getPortalRect(dest1, target, isNetherPortal, border).map((rect) -> AreaHelper.getNetherTeleportTarget(dest1, rect, axis, vec3d, dimensions, velocity, yaw, pitch)).orElse(null);
+				return () -> getPortalRect(dest, target, isNetherPortal, border).map((rect) -> NetherPortal.getNetherTeleportTarget(dest, rect, axis, vec3d, (Entity) (Object) this, velocity, yaw, pitch)).orElse(null);
 			}
 		} else {
-			return dest1 -> {
-				BlockPos target = isEndPortal ? ServerWorld.END_SPAWN_POS : dest1.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, dest1.getSpawnPos());
+			return () -> {
+				BlockPos target = isEndPortal ? ServerWorld.END_SPAWN_POS : dest.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, dest.getSpawnPos());
 				return new TeleportTarget(new Vec3d(target.getX() + 0.5, target.getY(), target.getZ() + 0.5), velocity, yaw, pitch);
 			};
 		}

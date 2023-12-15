@@ -1,6 +1,5 @@
 package wearblackallday.dimthread.util;
 
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.TeleportTarget;
 import org.jetbrains.annotations.Nullable;
 
@@ -9,5 +8,5 @@ import org.jetbrains.annotations.Nullable;
  * For thread-unsafe operations
  */
 public interface UncompletedTeleportTarget {
-	@Nullable TeleportTarget complete(ServerWorld dest);
+	@Nullable TeleportTarget complete();
 }
