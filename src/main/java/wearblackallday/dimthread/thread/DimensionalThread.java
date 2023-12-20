@@ -34,7 +34,11 @@ public class DimensionalThread extends Thread {
 	public void run() {
 		long tick = 0;
 		while (!isInterrupted()) {
-			lockTick.acquireUninterruptibly();
+			try {
+				lockTick.acquire();
+			} catch (InterruptedException e) {
+				return; // Server is shutting down
+			}
 			try {
 				tick++;
 				if (tick % 20 == 0) {
@@ -76,7 +80,11 @@ public class DimensionalThread extends Thread {
 	 * Waits until the dimension has been ticked and retrieves any errors that occurred
 	 */
 	public void retrieve() {
-		lockRetrieve.acquireUninterruptibly();
+		try {
+			lockRetrieve.acquire();
+		} catch (InterruptedException e) {
+			return; // Server is shutting down
+		}
 		if (error != null) {
 			CrashReport cr = error.getReport();
 			cr.addElement("Caller Thread", 1); // Add the main thread stack trace
